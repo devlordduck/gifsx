@@ -4,6 +4,11 @@
   "description": "Gif Rust crate bindings for Node.js.",
   "main": "index.js",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devlordduck/gifsx"
+  },
+  "homepage": "https://devlordduck.github.io/gifsx/",
   "keywords": [
     "napi-rs",
     "NAPI",
