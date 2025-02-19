@@ -1,6 +1,6 @@
 {
   "name": "@gifsx/gifsx",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "Gif Rust crate bindings for Node.js.",
   "main": "index.js",
   "license": "MIT",

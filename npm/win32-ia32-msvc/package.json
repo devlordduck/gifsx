@@ -1,6 +1,6 @@
 {
   "name": "@gifsx/gifsx-win32-ia32-msvc",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "os": [
     "win32"
   ],
