@@ -1,0 +1,36 @@
+{
+  "name": "@gifsx/gifsx-linux-arm-gnueabihf",
+  "version": "1.0.12",
+  "os": [
+    "linux"
+  ],
+  "cpu": [
+    "arm"
+  ],
+  "main": "gifsx.linux-arm-gnueabihf.node",
+  "files": [
+    "gifsx.linux-arm-gnueabihf.node"
+  ],
+  "description": "Gif Rust crate bindings for Node.js.",
+  "keywords": [
+    "napi-rs",
+    "NAPI",
+    "N-API",
+    "Rust",
+    "node-addon",
+    "node-addon-api",
+    "gif",
+    "encoder",
+    "decoder",
+    "gif-encoder",
+    "gif-decoder"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
+}

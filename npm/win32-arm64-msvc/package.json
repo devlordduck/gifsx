@@ -1,0 +1,36 @@
+{
+  "name": "@gifsx/gifsx-win32-arm64-msvc",
+  "version": "1.0.12",
+  "os": [
+    "win32"
+  ],
+  "cpu": [
+    "arm64"
+  ],
+  "main": "gifsx.win32-arm64-msvc.node",
+  "files": [
+    "gifsx.win32-arm64-msvc.node"
+  ],
+  "description": "Gif Rust crate bindings for Node.js.",
+  "keywords": [
+    "napi-rs",
+    "NAPI",
+    "N-API",
+    "Rust",
+    "node-addon",
+    "node-addon-api",
+    "gif",
+    "encoder",
+    "decoder",
+    "gif-encoder",
+    "gif-decoder"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">= 10"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/",
+    "access": "public"
+  }
+}

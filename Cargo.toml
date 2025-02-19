@@ -1,0 +1,22 @@
+[package]
+authors = ["lordex"]
+edition = "2021"
+name    = "gifsx"
+version = "1.0.13"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+color_quant = "1.1.0"
+gif         = "0.13.1"
+napi        = "2"
+napi-derive = "2"
+
+[build-dependencies]
+napi-build = "2"
+
+[profile.release]
+lto = true
+opt-level = 3
+strip = "symbols"
