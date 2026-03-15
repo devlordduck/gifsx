@@ -159,6 +159,25 @@ export declare class Frame {
   static fromIndexedPixels(width: number, height: number, pixels: Uint8Array, palette?: Array<number> | undefined | null, transparent?: number | undefined | null): Frame
 }
 
+/** A NeuQuant instance. */
+export declare class NeuQuant {
+  /** Create a new NeuQuant instance. */
+  constructor(sample: number, colors: number, pixels: Uint8Array)
+  /** Maps the rgba-pixel in-place to the best-matching color in the color map. */
+  mapPixel(pixel: Uint8Array): void
+  /**
+   * Finds the best-matching index in the color map.
+   * `pixel` is assumed to be in RGBA format.
+   */
+  indexOf(pixel: Uint8Array): number
+  /** Lookup pixel values for color at `idx` in the colormap. */
+  lookup(idx: number): Buffer | null
+  /** Returns the RGBA color map calculated from the sample. */
+  colorMapRgba(): Buffer
+  /** Returns the RGB color map calculated from the sample. */
+  colorMapRgb(): Buffer
+}
+
 /** Output mode for the image data. */
 export declare const enum ColorOutput {
   /**
