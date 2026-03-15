@@ -1,20 +1,20 @@
-use napi_derive::napi;
+use crate::enums::{ColorOutput, FrameBufType};
+use crate::frame::Frame;
 use napi::bindgen_prelude::*;
+use napi_derive::napi;
 use std::io::Cursor;
 use std::num::NonZero;
-use crate::frame::Frame;
-use crate::enums::{FrameBufType, ColorOutput};
 
 #[derive(Clone)]
 struct CustomOptions {
-  pub(crate) frame_buf_type: FrameBufType
+  pub(crate) frame_buf_type: FrameBufType,
 }
 
 /// The GIF Decoder.
 #[napi]
 pub struct Decoder {
   w: gif::Decoder<Cursor<Vec<u8>>>,
-  custom_options: CustomOptions
+  custom_options: CustomOptions,
 }
 
 #[napi]
@@ -23,28 +23,33 @@ impl Decoder {
   /// @param buffer - The GIF buffer to decode.
   /// @param options - The options to use for decoding.
   #[napi(constructor)]
-  pub fn new(
-    buffer: &[u8], options: Option<&DecodeOptions>,
-  ) -> napi::Result<Decoder> {
+  pub fn new(buffer: &[u8], options: Option<&DecodeOptions>) -> napi::Result<Decoder> {
     if let Some(options) = options {
       return options.read_info(buffer);
     }
 
     Ok(Decoder {
-      w: gif::Decoder::new(Cursor::new(buffer.to_vec()))
-        .map_err(|e| Error::new(
-          Status::GenericFailure, format!("Failed to create a GIF decoder: {}", e),
-        ))?,
-      custom_options: CustomOptions { frame_buf_type: FrameBufType::IndexedPixels }
+      w: gif::Decoder::new(Cursor::new(buffer.to_vec())).map_err(|e| {
+        Error::new(
+          Status::GenericFailure,
+          format!("Failed to create a GIF decoder: {}", e),
+        )
+      })?,
+      custom_options: CustomOptions {
+        frame_buf_type: FrameBufType::IndexedPixels,
+      },
     })
   }
 
   /// Returns the next frame info. (skips the buffer)
   #[napi]
   pub fn next_frame_info<'a>(&mut self) -> napi::Result<Option<Frame<'a>>> {
-    let f = self.w.next_frame_info().map_err(|e| Error::new(
-      Status::GenericFailure, format!("Failed to get next frame info: {}", e)
-    ))?;
+    let f = self.w.next_frame_info().map_err(|e| {
+      Error::new(
+        Status::GenericFailure,
+        format!("Failed to get next frame info: {}", e),
+      )
+    })?;
     Ok(f.map(|f| Frame::from_gif_frame(f.to_owned(), self.custom_options.frame_buf_type.clone())))
   }
 
@@ -52,26 +57,36 @@ impl Decoder {
   /// Do not call `<Decoder>.nextFrameInfo` beforehand. Deinterlaces the result.
   #[napi]
   pub fn read_next_frame<'a>(&mut self) -> napi::Result<Option<Frame<'a>>> {
-    let f = self.w.read_next_frame().map_err(|e| Error::new(
-      Status::GenericFailure, format!("Failed to get next frame info: {}", e)
-    ))?;
+    let f = self.w.read_next_frame().map_err(|e| {
+      Error::new(
+        Status::GenericFailure,
+        format!("Failed to get next frame info: {}", e),
+      )
+    })?;
     Ok(f.map(|f| Frame::from_gif_frame(f.to_owned(), self.custom_options.frame_buf_type.clone())))
   }
 
   /// Output buffer size.
   #[napi(getter)]
-  pub fn buffer_size(&self) -> u32 { self.w.buffer_size() as u32 }
+  pub fn buffer_size(&self) -> u32 {
+    self.w.buffer_size() as u32
+  }
 
   /// Line length of the current frame.
   #[napi(getter)]
-  pub fn line_length(&self) -> u32 { self.w.line_length() as u32 }
+  pub fn line_length(&self) -> u32 {
+    self.w.line_length() as u32
+  }
 
   /// The color palette relevant for the frame that has been decoded.
   #[napi(getter)]
   pub fn palette(&self) -> napi::Result<Buffer> {
-    Ok(Buffer::from(self.w.palette().map_err(|e| Error::new(
-      Status::GenericFailure, format!("Failed to get the palette: {}", e),
-    ))?))
+    Ok(Buffer::from(self.w.palette().map_err(|e| {
+      Error::new(
+        Status::GenericFailure,
+        format!("Failed to get the palette: {}", e),
+      )
+    })?))
   }
 
   /// The global color palette.
@@ -82,11 +97,15 @@ impl Decoder {
 
   /// Width of the GIF.
   #[napi(getter)]
-  pub fn width(&self) -> u16 { self.w.width() }
+  pub fn width(&self) -> u16 {
+    self.w.width()
+  }
 
   /// Height of the GIF.
   #[napi(getter)]
-  pub fn height(&self) -> u16 { self.w.height() }
+  pub fn height(&self) -> u16 {
+    self.w.height()
+  }
 
   /// Index of the background color in the global palette
   /// In practice this is not used, and the background is always transparent
@@ -109,7 +128,7 @@ impl Decoder {
 #[napi]
 pub struct DecodeOptions {
   w: gif::DecodeOptions,
-  custom_options: CustomOptions
+  custom_options: CustomOptions,
 }
 
 #[napi]
@@ -119,7 +138,9 @@ impl DecodeOptions {
   pub fn new() -> DecodeOptions {
     Self {
       w: gif::DecodeOptions::new(),
-      custom_options: CustomOptions { frame_buf_type: FrameBufType::IndexedPixels }
+      custom_options: CustomOptions {
+        frame_buf_type: FrameBufType::IndexedPixels,
+      },
     }
   }
 
@@ -128,12 +149,12 @@ impl DecodeOptions {
   pub fn set_color_output(&mut self, value: ColorOutput) {
     self.custom_options.frame_buf_type = match value {
       ColorOutput::Rgba => FrameBufType::Rgba,
-      ColorOutput::IndexedPixels => FrameBufType::IndexedPixels
+      ColorOutput::IndexedPixels => FrameBufType::IndexedPixels,
     };
 
     self.w.set_color_output(match value {
       ColorOutput::Rgba => gif::ColorOutput::RGBA,
-      ColorOutput::IndexedPixels => gif::ColorOutput::Indexed
+      ColorOutput::IndexedPixels => gif::ColorOutput::Indexed,
     });
   }
 
@@ -148,9 +169,12 @@ impl DecodeOptions {
       self.w.set_memory_limit(gif::MemoryLimit::Unlimited);
     } else {
       self.w.set_memory_limit(gif::MemoryLimit::Bytes(
-        NonZero::new(value as u64).ok_or_else(|| Error::new(
-          Status::InvalidArg, "Limit must be a positive non-zero integer".to_string(),
-        ))?
+        NonZero::new(value as u64).ok_or_else(|| {
+          Error::new(
+            Status::InvalidArg,
+            "Limit must be a positive non-zero integer".to_string(),
+          )
+        })?,
       ));
     }
     Ok(())
@@ -199,15 +223,19 @@ impl DecodeOptions {
   /// Returns a Decoder. All decoder configuration has to be done beforehand.
   /// @param buffer - The GIF buffer to decode.
   #[napi]
-  pub fn read_info(
-    &self,
-    buffer: &[u8],
-  ) -> napi::Result<Decoder> {
+  pub fn read_info(&self, buffer: &[u8]) -> napi::Result<Decoder> {
     Ok(Decoder {
-      w: self.w.clone().read_info(Cursor::new(buffer.to_vec()))
-        .map_err(|e| Error::new(
-          Status::GenericFailure, format!("Failed to create a GIF decoder: {}", e.to_string()),
-        ))?, custom_options: self.custom_options.clone()
+      w: self
+        .w
+        .clone()
+        .read_info(Cursor::new(buffer.to_vec()))
+        .map_err(|e| {
+          Error::new(
+            Status::GenericFailure,
+            format!("Failed to create a GIF decoder: {}", e.to_string()),
+          )
+        })?,
+      custom_options: self.custom_options.clone(),
     })
   }
 }

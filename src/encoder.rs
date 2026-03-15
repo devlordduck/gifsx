@@ -24,7 +24,8 @@ impl Encoder {
       height,
       w: gif::Encoder::new(
         Cursor::new(Vec::new()),
-        width, height,
+        width,
+        height,
         &palette.unwrap_or(&[]),
       )
       .map_err(|e| {

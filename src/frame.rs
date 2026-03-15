@@ -8,7 +8,7 @@ use napi_derive::napi;
 #[napi]
 pub struct Frame<'a> {
   pub buf_type: FrameBufType,
-  pub(crate) w: gif::Frame<'a>
+  pub(crate) w: gif::Frame<'a>,
 }
 
 #[napi]
@@ -35,27 +35,40 @@ impl<'a> Frame<'a> {
 
     Ok(Self {
       w: match &buf_type {
-        FrameBufType::Rgba | FrameBufType::Hex => 
-          gif::Frame::from_rgba_speed(width, height, buf, speed),
+        FrameBufType::Rgba | FrameBufType::Hex => {
+          gif::Frame::from_rgba_speed(width, height, buf, speed)
+        }
         FrameBufType::Rgb => gif::Frame::from_rgb_speed(width, height, buf, speed),
-        FrameBufType::IndexedPixels => gif::Frame::from_indexed_pixels(width, height, buf, transparent),
+        FrameBufType::IndexedPixels => {
+          gif::Frame::from_indexed_pixels(width, height, buf, transparent)
+        }
       },
-      buf_type: FrameBufType::IndexedPixels
+      buf_type: FrameBufType::IndexedPixels,
     })
   }
 
   #[napi(getter)]
-  pub fn width(&self) -> u16 { self.w.width }
+  pub fn width(&self) -> u16 {
+    self.w.width
+  }
   #[napi(getter)]
-  pub fn height(&self) -> u16 { self.w.height }
-  
+  pub fn height(&self) -> u16 {
+    self.w.height
+  }
+
   #[napi(getter)]
-  pub fn delay(&self) -> u16 { self.w.delay }
+  pub fn delay(&self) -> u16 {
+    self.w.delay
+  }
   #[napi(setter)]
-  pub fn set_delay(&mut self, val: u16) { self.w.delay = val; }
-  
+  pub fn set_delay(&mut self, val: u16) {
+    self.w.delay = val;
+  }
+
   #[napi(getter)]
-  pub fn dispose(&self) -> DisposalMethod { self.w.dispose.into() }
+  pub fn dispose(&self) -> DisposalMethod {
+    self.w.dispose.into()
+  }
   #[napi(setter)]
   pub fn set_dispose(&mut self, val: DisposalMethod) {
     self.w.dispose = match val {
@@ -67,42 +80,64 @@ impl<'a> Frame<'a> {
   }
 
   #[napi(getter)]
-  pub fn needs_user_input(&self) -> bool { self.w.needs_user_input }
+  pub fn needs_user_input(&self) -> bool {
+    self.w.needs_user_input
+  }
   #[napi(setter)]
-  pub fn set_needs_user_input(&mut self, val: bool) { self.w.needs_user_input = val; }
-  
-  #[napi(getter)]
-  pub fn transparent(&self) -> Option<u8> { self.w.transparent }
-  #[napi(setter)]
-  pub fn set_transparent(&mut self, val: Option<u8>) { self.w.transparent = val; }
+  pub fn set_needs_user_input(&mut self, val: bool) {
+    self.w.needs_user_input = val;
+  }
 
   #[napi(getter)]
-  pub fn interlaced(&self) -> bool { self.w.interlaced }
+  pub fn transparent(&self) -> Option<u8> {
+    self.w.transparent
+  }
   #[napi(setter)]
-  pub fn set_interlaced(&mut self, val: bool) { self.w.interlaced = val; }
-  
-  #[napi(getter)]
-  pub fn top(&self) -> u16 { self.w.top }
-  #[napi(setter)]
-  pub fn set_top(&mut self, val: u16) { self.w.top = val; }
+  pub fn set_transparent(&mut self, val: Option<u8>) {
+    self.w.transparent = val;
+  }
 
   #[napi(getter)]
-  pub fn left(&self) -> u16 { self.w.left }
+  pub fn interlaced(&self) -> bool {
+    self.w.interlaced
+  }
   #[napi(setter)]
-  pub fn set_left(&mut self, val: u16) { self.w.left = val; }
+  pub fn set_interlaced(&mut self, val: bool) {
+    self.w.interlaced = val;
+  }
+
+  #[napi(getter)]
+  pub fn top(&self) -> u16 {
+    self.w.top
+  }
+  #[napi(setter)]
+  pub fn set_top(&mut self, val: u16) {
+    self.w.top = val;
+  }
+
+  #[napi(getter)]
+  pub fn left(&self) -> u16 {
+    self.w.left
+  }
+  #[napi(setter)]
+  pub fn set_left(&mut self, val: u16) {
+    self.w.left = val;
+  }
 
   /// The frame's palette.
   #[napi(getter)]
   pub fn get_palette(&mut self) -> Option<Uint8Array> {
     if let Some(palette) = self.w.palette.clone() {
       Some(Uint8Array::new(palette))
-    } else { None }
+    } else {
+      None
+    }
   }
 
   #[napi]
-  pub fn set_palette(
-    &mut self, val: Option<&[u8]>,
-  ) { self.w.palette = val.map(|p| p.to_vec()); }
+  pub fn set_palette(&mut self, val: Option<&[u8]>) {
+    self.w.palette = val.map(|p| p.to_vec());
+  }
 
   /// The frame's buffer.
   #[napi(getter)]
@@ -125,21 +160,27 @@ impl<'a> Frame<'a> {
     width: u16,
     height: u16,
     mut buffer: Uint8Array,
-    speed: Option<i32>
+    speed: Option<i32>,
   ) -> napi::Result<Frame<'a>> {
     if let Some(speed) = speed {
       if speed < 1 || speed > 30 {
-        return Err(Error::new(Status::InvalidArg, "Speed needs to be in the range 1-30"));
+        return Err(Error::new(
+          Status::InvalidArg,
+          "Speed needs to be in the range 1-30",
+        ));
       }
     }
 
-    unsafe { Self::new(
-      width, height,
-      buffer.as_mut(),
-      FrameBufType::Rgba,
-      speed.unwrap_or(15),
-      None
-    ) }
+    unsafe {
+      Self::new(
+        width,
+        height,
+        buffer.as_mut(),
+        FrameBufType::Rgba,
+        speed.unwrap_or(15),
+        None,
+      )
+    }
   }
 
   /// Creates a frame from RGB pixel data.
@@ -152,15 +193,16 @@ impl<'a> Frame<'a> {
     width: u16,
     height: u16,
     mut buffer: Uint8Array,
-    speed: Option<i32>
+    speed: Option<i32>,
   ) -> napi::Result<Frame<'a>> {
     unsafe {
       Self::new(
-        width, height,
+        width,
+        height,
         buffer.as_mut(),
         FrameBufType::Rgb,
         speed.unwrap_or(15),
-        None
+        None,
       )
     }
   }
@@ -177,22 +219,23 @@ impl<'a> Frame<'a> {
     palette: Option<Vec<u8>>,
     transparent: Option<u8>,
   ) -> napi::Result<Frame<'a>> {
-    let mut frame = unsafe { Self::new(
-      width, height,
-      pixels.as_mut(),
-      FrameBufType::IndexedPixels,
-      0, transparent
-    )? };
+    let mut frame = unsafe {
+      Self::new(
+        width,
+        height,
+        pixels.as_mut(),
+        FrameBufType::IndexedPixels,
+        0,
+        transparent,
+      )?
+    };
     frame.w.palette = palette;
     frame.w.transparent = transparent;
     Ok(frame)
   }
 
   pub fn from_gif_frame(f: gif::Frame, buf_type: FrameBufType) -> Frame {
-    Frame {
-      w: f,
-      buf_type
-    }
+    Frame { w: f, buf_type }
   }
 
   /*pub fn to_gif_frame(&self) -> gif::Frame<'static> {
