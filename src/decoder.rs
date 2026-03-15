@@ -41,21 +41,21 @@ impl Decoder {
 
   /// Returns the next frame info. (skips the buffer)
   #[napi]
-  pub fn next_frame_info(&mut self) -> napi::Result<Option<Frame>> {
+  pub fn next_frame_info<'a>(&mut self) -> napi::Result<Option<Frame<'a>>> {
     let f = self.w.next_frame_info().map_err(|e| Error::new(
       Status::GenericFailure, format!("Failed to get next frame info: {}", e)
     ))?;
-    Ok(f.map(|f| Frame::from_gif_frame(f, self.custom_options.frame_buf_type.clone())))
+    Ok(f.map(|f| Frame::from_gif_frame(f.to_owned(), self.custom_options.frame_buf_type.clone())))
   }
 
   /// Reads the next frame from the GIF.
   /// Do not call `<Decoder>.nextFrameInfo` beforehand. Deinterlaces the result.
   #[napi]
-  pub fn read_next_frame(&mut self) -> napi::Result<Option<Frame>> {
+  pub fn read_next_frame<'a>(&mut self) -> napi::Result<Option<Frame<'a>>> {
     let f = self.w.read_next_frame().map_err(|e| Error::new(
       Status::GenericFailure, format!("Failed to get next frame info: {}", e)
     ))?;
-    Ok(f.map(|f| Frame::from_gif_frame(f, self.custom_options.frame_buf_type.clone())))
+    Ok(f.map(|f| Frame::from_gif_frame(f.to_owned(), self.custom_options.frame_buf_type.clone())))
   }
 
   /// Output buffer size.

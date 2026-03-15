@@ -1,90 +1,87 @@
-# `gifsx`
+# `@napi-rs/package-template`
 
-A `gif` rust crate binding for Node.js.
+![https://github.com/napi-rs/package-template/actions](https://github.com/napi-rs/package-template/workflows/CI/badge.svg)
 
-## Install
-```sh
-yarn add @gifsx/gifsx
-npm install @gifsx/gifsx
-bun install @gifsx/gifsx
+> Template project for writing node packages with napi-rs.
+
+# Usage
+
+1. Click **Use this template**.
+2. **Clone** your project.
+3. Run `yarn install` to install dependencies.
+4. Run `yarn napi rename -n [@your-scope/package-name] -b [binary-name]` command under the project folder to rename your package.
+
+## Install this test package
+
+```bash
+yarn add @napi-rs/package-template
 ```
 
-## Examples
+## Ability
 
-### Encoding a GIF
+### Build
 
-```javascript
-const { Encoder, Frame } = require('@gifsx/gifsx')
-const { createCanvas } = require('@napi-rs/canvas')
-const fs = require('fs')
+After `yarn build/npm run build` command, you can see `package-template.[darwin|win32|linux].node` file in project root. This is the native addon built from [lib.rs](./src/lib.rs).
 
-// Create a canvas
-const canvas = createCanvas(512, 512)
-const { width, height } = canvas
-const ctx = canvas.getContext('2d')
+### Test
 
-// Create a new encoder
-const encoder = new Encoder(512, 512)
-encoder.setRepeat(-1)
+With [ava](https://github.com/avajs/ava), run `yarn test/npm run test` to testing native addon. You can also switch to another testing framework if you want.
 
-// Function to convert canvas to frame
-function toFrame() {
-  return Frame.fromRgba(width, height, ctx.getImageData(0, 0, width, height).data)
-}
+### CI
 
-// Draw and add frames
-ctx.fillStyle = '#FF0000'
-ctx.fillRect(0, 0, 512, 512)
-encoder.addFrame(toFrame())
+With GitHub Actions, each commit and pull request will be built and tested automatically in [`node@20`, `@node22`] x [`macOS`, `Linux`, `Windows`] matrix. You will never be afraid of the native addon broken in these platforms.
 
-ctx.fillStyle = '#00FF00'
-ctx.fillRect(0, 0, 512, 512)
-encoder.addFrame(toFrame())
+### Release
 
-ctx.fillStyle = '#0000FF'
-ctx.fillRect(0, 0, 512, 512)
-encoder.addFrame(toFrame())
+Release native package is very difficult in old days. Native packages may ask developers who use it to install `build toolchain` like `gcc/llvm`, `node-gyp` or something more.
 
-// Get the encoded GIF buffer
-const buffer = encoder.getBuffer()
-fs.writeFileSync('./output.gif', buffer)
+With `GitHub actions`, we can easily prebuild a `binary` for major platforms. And with `N-API`, we should never be afraid of **ABI Compatible**.
+
+The other problem is how to deliver prebuild `binary` to users. Downloading it in `postinstall` script is a common way that most packages do it right now. The problem with this solution is it introduced many other packages to download binary that has not been used by `runtime codes`. The other problem is some users may not easily download the binary from `GitHub/CDN` if they are behind a private network (But in most cases, they have a private NPM mirror).
+
+In this package, we choose a better way to solve this problem. We release different `npm packages` for different platforms. And add it to `optionalDependencies` before releasing the `Major` package to npm.
+
+`NPM` will choose which native package should download from `registry` automatically. You can see [npm](./npm) dir for details. And you can also run `yarn add @napi-rs/package-template` to see how it works.
+
+## Develop requirements
+
+- Install the latest `Rust`
+- Install `Node.js@10+` which fully supported `Node-API`
+- Install `yarn@1.x`
+
+## Test in local
+
+- yarn
+- yarn build
+- yarn test
+
+And you will see:
+
+```bash
+$ ava --verbose
+
+  ✔ sync function from native code
+  ✔ sleep function from native code (201ms)
+  ─
+
+  2 tests passed
+✨  Done in 1.12s.
 ```
 
-### Decoding a GIF with config
+## Release package
 
-```javascript
-const { DecodeOptions, ColorOutput } = require('@gifsx/gifsx')
-const fs = require('fs')
+Ensure you have set your **NPM_TOKEN** in the `GitHub` project setting.
 
-// Create decode options
-const options = new DecodeOptions()
-options.setColorOutput(ColorOutput.Rgba)
-options.setMemoryLimit(-1)
+In `Settings -> Secrets`, add **NPM_TOKEN** into it.
 
-// Decode the GIF
-const gif = options.readInfo(fs.readFileSync('./input.gif'))
-console.log(`Width: ${gif.width}, Height: ${gif.height}, Loops: ${gif.loops}`)
+When you want to release the package:
 
-// Read frames
-let frame
-while ((frame = gif.readNextFrame())) {
-  console.log(`Frame: Width: ${frame.width}, Height: ${frame.height}, Delay: ${frame.delay}ms`)
-}
+```bash
+npm version [<newversion> | major | minor | patch | premajor | preminor | prepatch | prerelease [--preid=<prerelease-id>] | from-git]
+
+git push
 ```
 
-### Decoding a GIF without config
+GitHub actions will do the rest job for you.
 
-```javascript
-const { Decoder } = require('@gifsx/gifsx')
-const fs = require('fs')
-
-// Decode the GIF
-const gif = new Decoder(fs.readFileSync('./input.gif'));
-console.log(`Width: ${gif.width}, Height: ${gif.height}, Loops: ${gif.loops}`)
-
-// Read frames
-let frame
-while ((frame = gif.readNextFrame())) {
-  console.log(`Frame: Width: ${frame.width}, Height: ${frame.height}, Delay: ${frame.delay}ms`)
-}
-```
+> WARN: Don't run `npm publish` manually.

@@ -1,7 +1,7 @@
 import test from 'ava'
 
 import { Encoder, Frame, DecodeOptions, ColorOutput } from '../index'
-import { readFileSync, writeFileSync } from 'fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { createCanvas } from '@napi-rs/canvas'
 
 test('encoder with canvas', (t) => {
@@ -20,6 +20,8 @@ test('encoder with canvas', (t) => {
   ctx.fillRect(0, 0, 512, 512)
   ctx.fillStyle = '#FFFF00'
   ctx.fillRect(0, 0, 256, 256)
+  ctx.fillStyle = '#3388FF76'
+  ctx.fillRect(0, 0, 128, 128)
   gif.addFrame(toFrame())
 
   ctx.fillStyle = '#00FF00'

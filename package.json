@@ -1,14 +1,13 @@
 {
   "name": "@gifsx/gifsx",
-  "version": "1.0.15",
-  "description": "Gif Rust crate bindings for Node.js.",
+  "version": "1.1.0",
+  "description": "A napi-rs package for encoding and decoding GIFs",
   "main": "index.js",
-  "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/devlordduck/gifsx"
+    "url": "git+https://github.com/devlordduck/gifsx.git"
   },
-  "homepage": "https://devlordduck.github.io/gifsx/",
+  "license": "MIT",
   "keywords": [
     "napi-rs",
     "NAPI",
@@ -17,6 +16,7 @@
     "node-addon",
     "node-addon-api",
     "gif",
+    "image",
     "encoder",
     "decoder",
     "gif-encoder",
@@ -27,25 +27,25 @@
     "index.js"
   ],
   "napi": {
-    "name": "gifsx",
-    "triples": {
-      "defaults": true,
-      "additional": [
-        "x86_64-unknown-linux-musl",
-        "aarch64-unknown-linux-gnu",
-        "i686-pc-windows-msvc",
-        "armv7-unknown-linux-gnueabihf",
-        "aarch64-apple-darwin",
-        "aarch64-linux-android",
-        "x86_64-unknown-freebsd",
-        "aarch64-unknown-linux-musl",
-        "aarch64-pc-windows-msvc",
-        "armv7-linux-androideabi"
-      ]
-    }
+    "binaryName": "gifsx",
+    "targets": [
+      "x86_64-pc-windows-msvc",
+      "x86_64-apple-darwin",
+      "x86_64-unknown-linux-gnu",
+      "x86_64-unknown-linux-musl",
+      "aarch64-unknown-linux-gnu",
+      "i686-pc-windows-msvc",
+      "armv7-unknown-linux-gnueabihf",
+      "aarch64-apple-darwin",
+      "aarch64-linux-android",
+      "x86_64-unknown-freebsd",
+      "aarch64-unknown-linux-musl",
+      "aarch64-pc-windows-msvc",
+      "armv7-linux-androideabi"
+    ]
   },
   "engines": {
-    "node": ">= 10"
+    "node": ">= 12.22.0 < 13 || >= 14.17.0 < 15 || >= 15.12.0 < 16 || >= 16.0.0"
   },
   "publishConfig": {
     "registry": "https://registry.npmjs.org/",
@@ -53,7 +53,7 @@
   },
   "scripts": {
     "artifacts": "napi artifacts",
-    "bench": "node --import @swc-node/register/esm-register benchmark/bench.ts",
+    "bench": "node --import @oxc-node/core/register benchmark/bench.ts",
     "build": "napi build --platform --release",
     "build:debug": "napi build --platform",
     "format": "run-p format:prettier format:rs format:toml",
@@ -63,23 +63,30 @@
     "lint": "oxlint .",
     "prepublishOnly": "napi prepublish -t npm",
     "test": "ava",
+    "preversion": "napi build --platform && git add .",
     "version": "napi version",
+    "prepare": "husky",
     "docgen": "typedoc --out docs index.d.ts"
   },
   "devDependencies": {
-    "@napi-rs/canvas": "^0.1.65",
-    "@napi-rs/cli": "^2.18.4",
-    "@swc-node/register": "^1.10.6",
-    "@swc/core": "^1.6.13",
+    "@emnapi/core": "^1.5.0",
+    "@emnapi/runtime": "^1.5.0",
+    "@napi-rs/canvas": "^0.1.89",
+    "@napi-rs/cli": "^3.2.0",
+    "@oxc-node/core": "^0.0.35",
     "@taplo/cli": "^0.7.0",
-    "ava": "^6.1.3",
-    "chalk": "^5.3.0",
-    "husky": "^9.0.11",
-    "lint-staged": "^15.2.7",
-    "npm-run-all2": "^6.2.2",
-    "oxlint": "^0.9.0",
-    "prettier": "^3.3.3",
-    "typescript": "^5.5.3"
+    "@tybys/wasm-util": "^0.10.0",
+    "@types/node": "^25.1.0",
+    "ava": "^6.4.1",
+    "chalk": "^5.6.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.6",
+    "npm-run-all2": "^8.0.4",
+    "oxlint": "^1.14.0",
+    "prettier": "^3.6.2",
+    "tinybench": "^6.0.0",
+    "typedoc": "^0.28.17",
+    "typescript": "^5.9.2"
   },
   "lint-staged": {
     "*.@(js|ts|tsx)": [
@@ -99,11 +106,11 @@
     "timeout": "2m",
     "workerThreads": false,
     "environmentVariables": {
-      "TS_NODE_PROJECT": "./tsconfig.json"
+      "OXC_TSCONFIG_PATH": "./__test__/tsconfig.json"
     },
     "nodeArguments": [
       "--import",
-      "@swc-node/register/esm-register"
+      "@oxc-node/core/register"
     ]
   },
   "prettier": {
@@ -113,20 +120,5 @@
     "singleQuote": true,
     "arrowParens": "always"
   },
-  "packageManager": "yarn@4.4.1",
-  "optionalDependencies": {
-    "@gifsx/gifsx-android-arm-eabi": "1.0.12",
-    "@gifsx/gifsx-android-arm64": "1.0.12",
-    "@gifsx/gifsx-darwin-arm64": "1.0.12",
-    "@gifsx/gifsx-darwin-x64": "1.0.12",
-    "@gifsx/gifsx-freebsd-x64": "1.0.12",
-    "@gifsx/gifsx-linux-arm-gnueabihf": "1.0.12",
-    "@gifsx/gifsx-linux-arm64-gnu": "1.0.12",
-    "@gifsx/gifsx-linux-arm64-musl": "1.0.12",
-    "@gifsx/gifsx-linux-x64-gnu": "1.0.12",
-    "@gifsx/gifsx-linux-x64-musl": "1.0.12",
-    "@gifsx/gifsx-win32-arm64-msvc": "1.0.12",
-    "@gifsx/gifsx-win32-ia32-msvc": "1.0.12",
-    "@gifsx/gifsx-win32-x64-msvc": "1.0.12"
-  }
+  "packageManager": "yarn@4.12.0"
 }

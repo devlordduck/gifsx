@@ -1,74 +1,119 @@
-use napi_derive::napi;
-use napi::bindgen_prelude::*;
-use crate::util::hex_to_rgba;
+use std::borrow::Cow;
+
 use crate::enums::{DisposalMethod, FrameBufType};
+use napi::bindgen_prelude::*;
+use napi_derive::napi;
 
 /// A GIF frame.
 #[napi]
-pub struct Frame {
-  /// The delay for this frame in units of 10ms (e.g., a value of `10` equals 100ms).
-  pub delay: u16,
-  /// How the current frame should be disposed of when moving to the next one.
-  pub dispose: DisposalMethod,
-  /// An optional index of a transparent color in the palette.
-  pub transparent: Option<u8>,
-  /// Indicates whether this frame requires user input to proceed.
-  pub needs_user_input: bool,
-  /// The vertical offset of the frame relative to the top of the canvas.
-  pub top: u16,
-  /// The horizontal offset of the frame relative to the left of the canvas.
-  pub left: u16,
-  /// Width of the frame.
-  pub width: u16,
-  /// Height of the frame.
-  pub height: u16,
-  /// True if the image is interlaced.
-  pub interlaced: bool,
-
-  buf_type: FrameBufType,
-  palette: Option<Vec<u8>>,
-  buf: Vec<u8>, speed: Option<u8>
+pub struct Frame<'a> {
+  pub buf_type: FrameBufType,
+  pub(crate) w: gif::Frame<'a>
 }
 
 #[napi]
-impl Frame {
+impl<'a> Frame<'a> {
   fn new(
-    width: u16, height: u16,
-    buf: Vec<u8>, palette: Option<Vec<u8>>,
-    buf_type: FrameBufType, speed: Option<u8>,
-  ) -> napi::Result<Frame> {
-    if buf.len() != width as usize * height as usize * (match buf_type {
-      FrameBufType::Rgba | FrameBufType::Hex => 4,
-      FrameBufType::Rgb => 3,
-      FrameBufType::IndexedPixels => 1
-    }) { return Err(Error::new(Status::InvalidArg, "Buffer size mismatch")) }
+    width: u16,
+    height: u16,
+    buf: &mut [u8],
+    buf_type: FrameBufType,
+    speed: i32,
+    transparent: Option<u8>,
+  ) -> napi::Result<Frame<'a>> {
+    if buf.len()
+      != width as usize
+        * height as usize
+        * (match &buf_type {
+          FrameBufType::Rgba | FrameBufType::Hex => 4,
+          FrameBufType::Rgb => 3,
+          FrameBufType::IndexedPixels => 1,
+        })
+    {
+      return Err(Error::new(Status::InvalidArg, "Buffer size mismatch"));
+    }
 
     Ok(Self {
-      delay: 1, dispose: DisposalMethod::Keep,
-      transparent: None, needs_user_input: false,
-      top: 0, left: 0, width, height,
-      interlaced: false, palette,
-      buf, buf_type, speed
+      w: match &buf_type {
+        FrameBufType::Rgba | FrameBufType::Hex => 
+          gif::Frame::from_rgba_speed(width, height, buf, speed),
+        FrameBufType::Rgb => gif::Frame::from_rgb_speed(width, height, buf, speed),
+        FrameBufType::IndexedPixels => gif::Frame::from_indexed_pixels(width, height, buf, transparent),
+      },
+      buf_type: FrameBufType::IndexedPixels
     })
   }
 
-  /// The frame's palette.
   #[napi(getter)]
-  pub fn get_palette(&self) -> Option<Buffer> {
-    self.palette.clone().map(|p| Buffer::from(p))
+  pub fn width(&self) -> u16 { self.w.width }
+  #[napi(getter)]
+  pub fn height(&self) -> u16 { self.w.height }
+  
+  #[napi(getter)]
+  pub fn delay(&self) -> u16 { self.w.delay }
+  #[napi(setter)]
+  pub fn set_delay(&mut self, val: u16) { self.w.delay = val; }
+  
+  #[napi(getter)]
+  pub fn dispose(&self) -> DisposalMethod { self.w.dispose.into() }
+  #[napi(setter)]
+  pub fn set_dispose(&mut self, val: DisposalMethod) {
+    self.w.dispose = match val {
+      DisposalMethod::Any => gif::DisposalMethod::Any,
+      DisposalMethod::Keep => gif::DisposalMethod::Keep,
+      DisposalMethod::Background => gif::DisposalMethod::Background,
+      DisposalMethod::Previous => gif::DisposalMethod::Previous,
+    };
   }
 
-  /// Sets the frame's palette.
+  #[napi(getter)]
+  pub fn needs_user_input(&self) -> bool { self.w.needs_user_input }
+  #[napi(setter)]
+  pub fn set_needs_user_input(&mut self, val: bool) { self.w.needs_user_input = val; }
+  
+  #[napi(getter)]
+  pub fn transparent(&self) -> Option<u8> { self.w.transparent }
+  #[napi(setter)]
+  pub fn set_transparent(&mut self, val: Option<u8>) { self.w.transparent = val; }
+
+  #[napi(getter)]
+  pub fn interlaced(&self) -> bool { self.w.interlaced }
+  #[napi(setter)]
+  pub fn set_interlaced(&mut self, val: bool) { self.w.interlaced = val; }
+  
+  #[napi(getter)]
+  pub fn top(&self) -> u16 { self.w.top }
+  #[napi(setter)]
+  pub fn set_top(&mut self, val: u16) { self.w.top = val; }
+
+  #[napi(getter)]
+  pub fn left(&self) -> u16 { self.w.left }
+  #[napi(setter)]
+  pub fn set_left(&mut self, val: u16) { self.w.left = val; }
+
+  /// The frame's palette.
+  #[napi(getter)]
+  pub fn get_palette(&mut self) -> Option<Uint8Array> {
+    if let Some(palette) = self.w.palette.clone() {
+      Some(Uint8Array::new(palette))
+    } else { None }
+  }
+
   #[napi]
   pub fn set_palette(
     &mut self, val: Option<&[u8]>,
-  ) { self.palette = val.map(|p| p.to_vec()); }
+  ) { self.w.palette = val.map(|p| p.to_vec()); }
 
-  /// The buffer of this frame.
+  /// The frame's buffer.
   #[napi(getter)]
-  pub fn get_buffer(&self) -> Buffer { Buffer::from(self.buf.clone()) }
+  pub fn get_buffer(&self) -> Buffer {
+    Buffer::from(self.w.buffer.as_ref())
+  }
+
   #[napi]
-  pub fn set_buffer(&mut self, val: &[u8]) { self.buf = val.to_vec(); }
+  pub fn set_buffer(&mut self, buf: &[u8]) {
+    self.w.buffer = Cow::Owned(buf.to_owned());
+  }
 
   /// Creates a frame from RGBA pixel data.
   ///
@@ -77,19 +122,24 @@ impl Frame {
   /// - The size of `buffer` should match the expected size based on `width`, `height`.
   #[napi]
   pub fn from_rgba(
-    width: u16, height: u16,
-    buffer: &[u8], speed: Option<u8>
-  ) -> napi::Result<Frame> {
+    width: u16,
+    height: u16,
+    mut buffer: Uint8Array,
+    speed: Option<i32>
+  ) -> napi::Result<Frame<'a>> {
     if let Some(speed) = speed {
       if speed < 1 || speed > 30 {
         return Err(Error::new(Status::InvalidArg, "Speed needs to be in the range 1-30"));
       }
     }
 
-    Ok(Self::new(
-      width, height, buffer.to_vec(),
-      None, FrameBufType::Rgba, speed
-    )?)
+    unsafe { Self::new(
+      width, height,
+      buffer.as_mut(),
+      FrameBufType::Rgba,
+      speed.unwrap_or(15),
+      None
+    ) }
   }
 
   /// Creates a frame from RGB pixel data.
@@ -99,42 +149,20 @@ impl Frame {
   /// - The size of `buffer` should match the expected size based on `width`, `height`.
   #[napi]
   pub fn from_rgb(
-    width: u16, height: u16,
-    buffer: &[u8], speed: Option<u8>
-  ) -> napi::Result<Frame> {
-    if let Some(speed) = speed {
-      if speed < 1 || speed > 30 {
-        return Err(Error::new(Status::InvalidArg, "Speed needs to be in the range 1-30"));
-      }
+    width: u16,
+    height: u16,
+    mut buffer: Uint8Array,
+    speed: Option<i32>
+  ) -> napi::Result<Frame<'a>> {
+    unsafe {
+      Self::new(
+        width, height,
+        buffer.as_mut(),
+        FrameBufType::Rgb,
+        speed.unwrap_or(15),
+        None
+      )
     }
-
-    Ok(Self::new(
-      width, height, buffer.to_vec(),
-      None, FrameBufType::Rgb, speed
-    )?)
-  }
-
-  /// Creates a frame from hex pixel data.
-  ///
-  /// ### Notes:
-  /// - Speed needs to be in the range 1-30. Higher is faster, lower CPU usage but worse quality.
-  /// - The size of `buffer` should match the expected size based on `width`, `height`.
-  /// - The color output will be in Rgba.
-  #[napi]
-  pub fn from_hex(
-    width: u16, height: u16,
-    buffer: Vec<String>, speed: Option<u8>
-  ) -> napi::Result<Frame> {
-    if let Some(speed) = speed {
-      if speed < 1 || speed > 30 {
-        return Err(Error::new(Status::InvalidArg, "Speed needs to be in the range 1-30"));
-      }
-    }
-
-    Ok(Self::new(
-      width, height, hex_to_rgba(buffer)?.to_vec(),
-      None, FrameBufType::Hex, speed
-    )?)
   }
 
   /// Creates a frame from indexed pixel data.
@@ -143,69 +171,72 @@ impl Frame {
   /// - The size of `buffer` should match the expected size based on `width`, `height`.
   #[napi]
   pub fn from_indexed_pixels(
-    width: u16, height: u16,
-    pixels: &[u8], palette: Option<&[u8]>,
+    width: u16,
+    height: u16,
+    mut pixels: Uint8Array,
+    palette: Option<Vec<u8>>,
     transparent: Option<u8>,
-  ) -> napi::Result<Frame> {
-    let mut frame = Self::new(
-      width, height, pixels.to_vec(),
-      palette.map(|p| p.to_vec()), FrameBufType::IndexedPixels,
-      None
-    )?;
-    frame.transparent = transparent;
+  ) -> napi::Result<Frame<'a>> {
+    let mut frame = unsafe { Self::new(
+      width, height,
+      pixels.as_mut(),
+      FrameBufType::IndexedPixels,
+      0, transparent
+    )? };
+    frame.w.palette = palette;
+    frame.w.transparent = transparent;
     Ok(frame)
   }
 
-  pub fn from_gif_frame(f: &gif::Frame, buf_type: FrameBufType) -> Frame {
+  pub fn from_gif_frame(f: gif::Frame, buf_type: FrameBufType) -> Frame {
     Frame {
-      delay: f.delay, dispose: match f.dispose {
-        gif::DisposalMethod::Any => DisposalMethod::Any,
-        gif::DisposalMethod::Keep => DisposalMethod::Keep,
-        gif::DisposalMethod::Background => DisposalMethod::Background,
-        gif::DisposalMethod::Previous => DisposalMethod::Previous,
-      }, transparent: f.transparent,
-      needs_user_input: f.needs_user_input,
-      top: f.top, left: f.left,
-      width: f.width, height: f.height,
-      interlaced: f.interlaced,
-      palette: f.palette.to_owned(),
-      buf: (&*f.buffer).to_owned().to_vec(),
-      buf_type, speed: None
+      w: f,
+      buf_type
     }
   }
 
-  pub fn to_gif_frame(&self) -> gif::Frame<'static> {
+  /*pub fn to_gif_frame(&self) -> gif::Frame<'static> {
     let mut frame = match self.buf_type {
       FrameBufType::Rgba | FrameBufType::Hex => gif::Frame::from_rgba_speed(
-        self.width, self.height,
-        &mut self.buf.clone(), self.speed.unwrap_or(10).into(),
+        self.width,
+        self.height,
+        &mut self.buf.clone(),
+        self.speed.unwrap_or(10).into(),
       ),
       FrameBufType::Rgb => gif::Frame::from_rgb_speed(
-        self.width, self.height,
-        &mut self.buf.clone(), self.speed.unwrap_or(10).into(),
+        self.width,
+        self.height,
+        &mut self.buf.clone(),
+        self.speed.unwrap_or(10).into(),
       ),
-      FrameBufType::IndexedPixels => gif::Frame::from_indexed_pixels(
-        self.width, self.height, self.buf.clone(), self.transparent
-      )
+      FrameBufType::IndexedPixels => {
+        gif::Frame::from_indexed_pixels(self.width, self.height, self.buf.clone(), self.transparent)
+      }
     };
 
-    if self.palette.is_some() { frame.palette = self.palette.clone() }
-    if frame.transparent.is_some() { frame.transparent = self.transparent }
+    if self.palette.is_some() {
+      frame.palette = self.palette.clone()
+    }
+    if frame.transparent.is_some() {
+      frame.transparent = self.transparent
+    }
 
     frame.delay = self.delay;
-    frame.dispose = self.to_gif_disposal();
+    frame.dispose = self.dispose.clone().into();
     frame.needs_user_input = self.needs_user_input;
     frame.top = self.top;
     frame.left = self.left;
     frame
-  }
+  }*/
+}
 
-  fn to_gif_disposal(&self) -> gif::DisposalMethod {
-    match self.dispose {
-      DisposalMethod::Any => gif::DisposalMethod::Any,
-      DisposalMethod::Keep => gif::DisposalMethod::Keep,
-      DisposalMethod::Background => gif::DisposalMethod::Background,
-      DisposalMethod::Previous => gif::DisposalMethod::Previous,
+impl Into<DisposalMethod> for gif::DisposalMethod {
+  fn into(self) -> DisposalMethod {
+    match self {
+      gif::DisposalMethod::Any => DisposalMethod::Any,
+      gif::DisposalMethod::Keep => DisposalMethod::Keep,
+      gif::DisposalMethod::Background => DisposalMethod::Background,
+      gif::DisposalMethod::Previous => DisposalMethod::Previous,
     }
   }
 }
