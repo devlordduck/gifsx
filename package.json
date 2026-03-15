@@ -120,5 +120,20 @@
     "singleQuote": true,
     "arrowParens": "always"
   },
-  "packageManager": "yarn@4.12.0"
+  "packageManager": "yarn@4.12.0",
+  "optionalDependencies": {
+    "@gifsx/gifsx-win32-x64-msvc": "1.1.6",
+    "@gifsx/gifsx-darwin-x64": "1.1.6",
+    "@gifsx/gifsx-linux-x64-gnu": "1.1.6",
+    "@gifsx/gifsx-linux-x64-musl": "1.1.6",
+    "@gifsx/gifsx-linux-arm64-gnu": "1.1.6",
+    "@gifsx/gifsx-win32-ia32-msvc": "1.1.6",
+    "@gifsx/gifsx-linux-arm-gnueabihf": "1.1.6",
+    "@gifsx/gifsx-darwin-arm64": "1.1.6",
+    "@gifsx/gifsx-android-arm64": "1.1.6",
+    "@gifsx/gifsx-freebsd-x64": "1.1.6",
+    "@gifsx/gifsx-linux-arm64-musl": "1.1.6",
+    "@gifsx/gifsx-win32-arm64-msvc": "1.1.6",
+    "@gifsx/gifsx-android-arm-eabi": "1.1.6"
+  }
 }
